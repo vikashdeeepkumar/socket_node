@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Chat</h2>
+<div>
+  <ul id="chatbox">
+  
+</ul>
+</div>
+<div id="chatbtn">
+  
+
+</div>
+<form action="/action_page.php">
+  <input type="text" id="message" name="message" placeholder="send message" value=""><br>
+
+  <input type="submit" id="submit" value="Submit">
+</form> 
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  console.log(socket);
+  const input = document.querySelector('#message');
+  const btn = document.querySelector('#submit');
+  const chatbox = document.querySelector('#chatbox');
+  const chatControls = document.querySelector('#chatbtn');
+
+  const statusEl = document.createElement('p');
+  document.body.prepend(statusEl);
+
+  function updateButton(isConnected) {
+    chatControls.innerHTML = ''; 
+
+    if (isConnected) {
+      statusEl.innerText = 'Connected!';
+      statusEl.style.color = 'green';
+
+      const disconnectBtn = document.createElement('button');
+      disconnectBtn.id = 'disconnectBtn';
+      disconnectBtn.innerText = 'Disconnect';
+
+      disconnectBtn.onclick = (e) => {
+        e.preventDefault();
+        socket.disconnect();
+      };
+      chatControls.appendChild(disconnectBtn);
+    } else {
+      statusEl.innerText = `Disconnected: Socket manually disconnected`;
+      statusEl.style.color = 'red';
+
+      const connectBtn = document.createElement('button');
+      connectBtn.id = 'connectBtn';
+      connectBtn.innerText = 'Connect';
+
+      connectBtn.onclick = (e) => {
+        e.preventDefault();
+        socket.connect();
+      };
+      chatControls.appendChild(connectBtn);
+    }
+  }
+
+  socket.on('connect', () => {
+    updateButton(true);
+  });
+
+  socket.on('disconnect', (reason) => {
+    statusEl.innerText = `Disconnected: ${reason}`;
+    updateButton(false);
+  });
+
+
+  
+  updateButton(socket.connected);
+
+  btn.onclick = (e) => {
+    e.preventDefault();
+    if (socket.connected) {
+      const messageText = input.value.trim();
+      if (messageText) {
+        socket.emit('message', messageText, {"json": "customdata"});
+        input.value = '';
+      }
+    } else {
+      statusEl.innerText = 'Cannot send message. You are disconnected.';
+    }
+  };
+
+  socket.on('message', (msg, json_arg_or_any) => {
+    const li = document.createElement('li');
+    li.innerText = `${msg} and ${json_arg_or_any.anything}`;
+    chatbox.appendChild(li);
+  });
+</script>
+
+
+</body>
+</html>
